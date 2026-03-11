@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Класс 8В">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230d0d1a'/><text y='.9em' font-size='70' x='50%' text-anchor='middle'>🏫</text></svg>">
+<title>Класс 8В</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Russo+One&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Russo+One&display=swap" rel="stylesheet"></noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;--card:#1a1a30;--border:rgba(255,255,255,0.09);
+  --text:#e8e8f0;--muted:rgba(255,255,255,0.38);--accent:#4fc3f7;
+  --danger:#ff5252;--teacher:#ce93d8;--green:#69f0ae;--gold:#ffd54f;
+  --tg-bg:#0e1621;--tg-own:#2b5278;--tg-other:#182533;
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;overflow:hidden}
+body{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+#root{height:100%;height:100dvh;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:none}25%,75%{transform:translateX(-7px)}50%{transform:translateX(7px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* SPINNER */
+#spinner{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+.spin{width:44px;height:44px;border:4px solid rgba(79,195,247,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+
+/* LOGIN */
+#login-screen{flex:1;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 30%,#1a1052,#0d0d1a);padding:20px;overflow-y:auto;padding-top:calc(20px + var(--st))}
+.login-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(20px);border-radius:26px;padding:38px 34px;width:100%;max-width:420px;animation:slideUp .4s ease}
+.login-step{display:flex;flex-direction:column;gap:14px}
+.login-step.hidden{display:none!important}
+.field{background:rgba(255,255,255,.07);border:2px solid var(--border);border-radius:14px;padding:13px 17px;color:#fff;font-size:16px;width:100%;outline:none;font-family:'Nunito',sans-serif;transition:border-color .2s}
+.field:focus{border-color:var(--accent)}.field::placeholder{color:var(--muted)}
+.field.shake{animation:shake .4s;border-color:var(--danger)!important}
+.phone-row{display:flex;gap:8px}
+.cc-sel{background:rgba(255,255,255,.07);border:2px solid var(--border);border-radius:14px;padding:13px 8px;color:#fff;font-size:14px;outline:none;font-family:'Nunito',sans-serif;width:88px;flex-shrink:0;cursor:pointer}
+.cc-sel option{background:#1a1a30}
+.btn{border:none;border-radius:14px;padding:13px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s;width:100%}
+.btn-primary{background:linear-gradient(135deg,#4fc3f7,#0288d1);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(79,195,247,.35)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--muted);font-size:13px;padding:10px 14px;border-radius:10px}
+.btn-ghost:hover{color:var(--accent)}
+.btn-gold{background:linear-gradient(135deg,#ffd54f,#ff8f00);color:#1a1200}
+.err{background:rgba(255,82,82,.12);border:1px solid rgba(255,82,82,.3);color:#ff8a80;border-radius:12px;padding:10px 14px;font-size:14px;text-align:center}
+.inf{background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.25);color:#b3e5fc;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.6}
+.ok{background:rgba(105,240,174,.1);border:1px solid rgba(105,240,174,.3);color:var(--green);border-radius:12px;padding:12px 14px;font-size:14px;text-align:center}
+.pend{background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.3);color:#ffe082;border-radius:16px;padding:20px 16px;font-size:14px;text-align:center;line-height:1.8}
+.pend .big{font-size:44px;display:block;margin-bottom:8px}
+.keybox{background:rgba(79,195,247,.08);border:2px dashed rgba(79,195,247,.4);border-radius:16px;padding:18px;text-align:center}
+.keyval{font-family:monospace;font-size:22px;font-weight:900;color:var(--accent);letter-spacing:2px;margin:8px 0}
+.keyhint{font-size:12px;color:var(--muted)}
+.plabel{font-size:12px;color:var(--muted);font-weight:600}
+.msg-row-pick{display:flex;gap:8px}
+.mopt{flex:1;background:rgba(255,255,255,.06);border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mopt .ico{font-size:22px}
+.mopt-img{width:28px;height:28px;object-fit:contain;margin-bottom:2px}
+.mopt.sel{border-color:var(--accent);color:var(--accent);background:rgba(79,195,247,.1)}
+.otp-row{display:flex;gap:8px;justify-content:center}
+.otp-d{width:50px;height:57px;background:rgba(255,255,255,.07);border:2px solid var(--border);border-radius:13px;color:#fff;font-size:24px;font-weight:700;text-align:center;outline:none;font-family:'Nunito',sans-serif;transition:border-color .2s;caret-color:var(--accent)}
+.otp-d:focus{border-color:var(--accent);background:rgba(255,255,255,.1)}
+.otp-d.shake{animation:shake .4s;border-color:var(--danger)!important}
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* APP */
+#app{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+
+/* HEADER */
+#header{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(10,10,22,.97);border-bottom:1px solid var(--border);
+  padding:0 16px;padding-top:var(--st);
+  min-height:calc(52px + var(--st));
+  flex-shrink:0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  position:relative;z-index:20;
+}
+.brand{font-family:'Russo One',sans-serif;font-size:20px;color:var(--accent);letter-spacing:2px;padding-right:12px;border-right:1px solid var(--border);flex-shrink:0}
+.tabs-row{display:flex;flex:1;overflow-x:auto;scrollbar-width:none}
+.tabs-row::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:15px 12px;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .18s;white-space:nowrap;flex-shrink:0}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.user-chip{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.nblock{display:flex;flex-direction:column}
+.btn-sm{background:rgba(255,255,255,.07);border:none;border-radius:9px;color:var(--muted);padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600}
+.btn-sm:hover{background:rgba(255,255,255,.13);color:#fff}
+.badge{background:#e53935;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:900;margin-left:4px}
+
+/* BOTTOM NAV */
+#bottom-nav{
+  display:none;flex-shrink:0;
+  background:rgba(10,10,22,.97);border-top:1px solid var(--border);
+  padding-bottom:var(--sb);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  z-index:20;
+}
+.bnav{display:flex}
+.bnav-btn{flex:1;background:none;border:none;padding:9px 4px 7px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--muted);font-size:10px;font-weight:700;position:relative;transition:color .15s}
+.bnav-btn.active{color:var(--accent)}
+.bnav-btn .bico{font-size:21px;line-height:1}
+.bnav-badge{position:absolute;top:5px;right:calc(50% - 20px);background:#e53935;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:900;min-width:16px;text-align:center}
+
+/* CONTENT */
+#content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+
+/* CHAT — TELEGRAM STYLE */
+#chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--tg-bg)}
+#chat-topbar{align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(10,10,22,.9);flex-shrink:0;display:none}
+#topbar-info{display:flex;flex-direction:column}
+#topbar-title{font-size:15px;font-weight:700}
+#topbar-sub{font-size:11px;color:var(--muted);margin-top:1px}
+#messages{flex:1;overflow-y:auto;padding:8px 6px 4px;display:flex;flex-direction:column}
+.date-sep{text-align:center;margin:8px 0 5px;flex-shrink:0}
+.date-sep span{background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);font-size:11px;padding:3px 12px;border-radius:10px}
+.msg-row{display:flex;align-items:flex-end;gap:5px;margin-bottom:2px;animation:popIn .16s ease}
+.msg-row.own{flex-direction:row-reverse}
+.ava-slot{width:28px;height:28px;flex-shrink:0;margin-bottom:2px}
+.ava-c{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.msg-col{display:flex;flex-direction:column;max-width:70%}
+.msg-col.own{align-items:flex-end;max-width:75%}
+.sname{font-size:12px;font-weight:700;margin-bottom:2px;padding:0 10px}
+.bubble{padding:7px 10px 5px;border-radius:16px;line-height:1.5;word-break:break-word;font-size:14.5px;position:relative}
+.bubble.other{background:var(--tg-other);color:#fff;border-bottom-left-radius:4px}
+.bubble.own{background:var(--tg-own);color:#fff;border-bottom-right-radius:4px}
+.bubble.tea{background:linear-gradient(135deg,#3a1050,#480f60)!important}
+.bfoot{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:3px}
+.btime{font-size:11px;opacity:.5;white-space:nowrap}
+.del-btn{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px;border-radius:5px;opacity:0;color:rgba(255,255,255,.45)}
+.msg-row:hover .del-btn,.msg-row:active .del-btn{opacity:1}
+.msg-photo{max-width:220px;max-height:260px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px}
+/* chat bar */
+#chat-bar{display:flex;align-items:flex-end;gap:7px;padding:7px 10px;padding-bottom:calc(7px + var(--sb));background:rgba(10,10,22,.97);border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+#photo-btn{background:none;border:none;cursor:pointer;font-size:22px;padding:3px;color:rgba(255,255,255,.4);flex-shrink:0;line-height:1;transition:color .15s}
+#photo-btn:hover{color:var(--accent)}
+#photo-input{display:none}
+#msg-input{flex:1;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:20px;padding:9px 15px;color:#fff;font-size:15px;outline:none;font-family:'Nunito',sans-serif;resize:none;max-height:100px;min-height:40px;transition:border-color .2s;line-height:1.4}
+#msg-input:focus{border-color:rgba(79,195,247,.5)}
+#msg-input::placeholder{color:rgba(255,255,255,.26)}
+#send-btn{background:linear-gradient(135deg,#4fc3f7,#0288d1);border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;color:#fff;transition:transform .15s}
+#send-btn:hover{transform:scale(1.08)}
+#photo-prev{display:none;align-items:center;gap:8px;padding:6px 10px;background:rgba(79,195,247,.07);border-top:1px solid rgba(79,195,247,.18);flex-shrink:0}
+#pp-img{width:48px;height:48px;object-fit:cover;border-radius:7px}
+#pp-clear{background:rgba(255,82,82,.14);border:1px solid rgba(255,82,82,.4);border-radius:7px;color:var(--danger);cursor:pointer;padding:4px 10px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:700}
+#clear-bar{padding:6px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:none;justify-content:flex-end;background:var(--tg-bg);flex-shrink:0}
+.btn-danger{background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.3);border-radius:9px;color:var(--danger);padding:5px 13px;cursor:pointer;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700}
+
+/* PANELS */
+.panel{flex:1;overflow-y:auto;padding:18px 16px;display:none}
+.panel.active{display:block}
+.ptitle{font-size:20px;font-weight:900;margin-bottom:14px}
+.day-pills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.day-pill{background:rgba(255,255,255,.06);border:2px solid transparent;border-radius:11px;padding:6px 12px;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .16s}
+.day-pill.active{border-color:var(--accent);color:var(--accent);background:rgba(79,195,247,.07)}
+.sched-tbl{width:100%;border-collapse:collapse}
+.sched-tbl th,.sched-tbl td{padding:9px 11px;border:1px solid var(--border);font-size:13px;text-align:left}
+.sched-tbl th{background:rgba(79,195,247,.11);color:var(--accent);font-weight:700}
+.sched-tbl tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.lesson-card{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:10px 14px;margin-bottom:8px}
+.lesson-num{background:rgba(79,195,247,.15);color:var(--accent);border-radius:9px;width:33px;height:33px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex-shrink:0}
+.req-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:15px;padding:13px 15px;margin-bottom:9px}
+.req-card.approved{border-color:rgba(105,240,174,.3);background:rgba(105,240,174,.04)}
+.req-card.rejected{opacity:.4}
+.req-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.req-name{font-weight:700;font-size:14px}
+.req-phone{color:var(--accent);font-size:12px;font-weight:600;margin-top:2px}
+.req-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.req-actions{display:flex;gap:7px}
+.btn-approve{background:linear-gradient(135deg,#00c853,#1b5e20);border:none;color:#fff;border-radius:10px;padding:8px 15px;font-weight:700;cursor:pointer;font-size:13px;font-family:'Nunito',sans-serif}
+.btn-reject{background:rgba(255,82,82,.12);border:2px solid rgba(255,82,82,.4);color:var(--danger);border-radius:10px;padding:8px 15px;font-weight:700;cursor:pointer;font-size:13px;font-family:'Nunito',sans-serif}
+.code-reveal{margin-top:10px;background:rgba(79,195,247,.07);border:1px dashed rgba(79,195,247,.3);border-radius:10px;padding:10px 13px}
+.code-num{font-family:monospace;font-size:24px;font-weight:900;color:var(--accent);letter-spacing:4px}
+.students-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px}
+.student-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:12px 13px}
+.sc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sc-ava{font-size:22px}
+.sc-name{font-weight:700;font-size:13px}
+.sc-phone{color:var(--accent);font-size:11px;margin-top:1px}
+.sc-key{font-family:monospace;font-size:11px;color:var(--gold);background:rgba(255,213,79,.07);border:1px solid rgba(255,213,79,.18);border-radius:7px;padding:3px 8px;margin-top:6px;word-break:break-all}
+.ses-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.ses-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);background:rgba(255,255,255,.03);border-radius:7px;padding:5px 8px}
+.ses-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ses-dot.on{background:var(--green);box-shadow:0 0 5px var(--green)}
+.ses-dot.off{background:rgba(255,255,255,.2)}
+/* Guide */
+.gsec{margin-bottom:22px}
+.gsec h3{font-size:15px;font-weight:900;color:var(--accent);margin-bottom:11px;display:flex;align-items:center;gap:7px}
+.gstep{display:flex;gap:11px;margin-bottom:9px;align-items:flex-start}
+.gnum{background:rgba(79,195,247,.13);color:var(--accent);border-radius:50%;width:25px;height:25px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;margin-top:2px}
+.gtxt{font-size:13px;line-height:1.6;color:var(--text)}
+.gtxt b{color:#fff}
+.gtxt code{background:rgba(255,255,255,.08);border-radius:5px;padding:1px 5px;font-family:monospace;font-size:12px;color:var(--gold)}
+.gtip{background:rgba(79,195,247,.07);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;font-size:13px;color:#b3e5fc;line-height:1.6;margin-top:7px}
+.gwarn{background:rgba(255,213,79,.07);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:8px 12px;font-size:13px;color:#ffe082;line-height:1.6;margin-top:7px}
+.pcard{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.pcard h4{font-size:13px;font-weight:700;margin-bottom:6px}
+.psteps{font-size:12px;color:var(--muted);line-height:1.9}
+.psteps b{color:#fff}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(6px);animation:fadeIn .15s}
+.modal{background:#1a1a30;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:26px;max-width:330px;width:90%;text-align:center}
+.modal h3{font-size:17px;margin:9px 0 5px}
+.modal p{color:var(--muted);font-size:13px;margin-bottom:18px}
+.mbtns{display:flex;gap:9px}
+.mbtns button{flex:1;padding:11px;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
+.mbtns .cancel{background:rgba(255,255,255,.08);color:#fff}
+.mbtns .confirm{background:linear-gradient(135deg,#ff5252,#c62828);color:#fff}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:1000;cursor:pointer}
+#lightbox img{max-width:96vw;max-height:90vh;border-radius:10px;object-fit:contain}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .icon{font-size:50px;margin-bottom:12px}
+.empty h3{font-size:15px;font-weight:700;color:rgba(255,255,255,.35)}
+.empty p{font-size:13px;margin-top:5px}
+
+/* COMPACT (mobile) */
+body.compact .login-card{padding:22px 16px;border-radius:20px}
+body.compact .otp-d{width:41px;height:51px;font-size:20px}
+body.compact .otp-row{gap:5px}
+body.compact .bubble{font-size:14px}
+body.compact .msg-col{max-width:78%}
+body.compact .msg-col.own{max-width:83%}
+body.compact .msg-photo{max-width:185px;max-height:210px}
+body.compact .panel{padding:12px 10px}
+body.compact .students-grid{grid-template-columns:1fr 1fr}
+body.compact .req-top{flex-direction:column}
+body.compact .req-actions{width:100%}
+body.compact .btn-approve,.body.compact .btn-reject{flex:1}
+/* hide top tabs, show bottom nav on mobile */
+body.compact .tabs-row{display:none}
+body.compact .nblock{display:none}
+body.compact #bottom-nav{display:block}
+body.compact #header{min-height:calc(46px + var(--st));padding:0 12px;padding-top:var(--st);gap:8px}
+body.compact .brand{font-size:17px}
+</style>
+</head>
+<body>
+<div id="root">
+<div id="spinner"><div class="spin"></div><div style="color:var(--muted);font-size:14px;font-weight:600">Подключение...</div></div>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:none">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:48px">🏫</div>
+      <div style="font-family:'Russo One',sans-serif;font-size:44px;color:#fff;letter-spacing:3px;line-height:1">8В</div>
+      <p style="color:var(--muted);margin-top:5px;font-size:12px">Портал класса</p>
+    </div>
+    <div class="login-step" id="step-phone">
+      <input id="inp-name" class="field" placeholder="Имя Фамилия" autocomplete="off">
+      <div class="phone-row">
+        <select class="cc-sel" id="inp-cc">
+          <option value="+7">🇷🇺 +7</option>
+          <option value="+375">🇧🇾 +375</option>
+          <option value="+380">🇺🇦 +380</option>
+        </select>
+        <input id="inp-phone" class="field" placeholder="999 123 45 67" type="tel" inputmode="numeric">
+      </div>
+      <div class="plabel">Куда прислать код?</div>
+      <div class="msg-row-pick">
+        <button class="mopt sel" data-m="WhatsApp" onclick="pickMsg(this)"><img class="mopt-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/WhatsApp_logo-color-vertical.svg/1280px-WhatsApp_logo-color-vertical.svg.png" alt="WhatsApp">WhatsApp</button>
+        <button class="mopt" data-m="Telegram" onclick="pickMsg(this)"><img class="mopt-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Telegram_2019_Logo.svg/500px-Telegram_2019_Logo.svg.png" alt="Telegram">Telegram</button>
+        <button class="mopt" data-m="MAX" onclick="pickMsg(this)"><img class="mopt-img" src="https://logo-teka.com/wp-content/uploads/2025/07/max-messenger-sign-logo.png" alt="MAX">MAX</button>
+      </div>
+      <div id="err-phone" class="err" style="display:none"></div>
+      <button class="btn btn-primary" id="btn-request">Отправить заявку →</button>
+      <div class="divider">уже есть ключ?</div>
+      <button class="btn btn-gold" id="btn-show-key">🔑 Войти по ключу</button>
+      <div class="divider">или</div>
+      <button class="btn btn-ghost" id="btn-show-admin">👑 Администратор</button>
+    </div>
+
+    <div class="login-step hidden" id="step-wait">
+      <div class="pend"><span class="big" style="animation:pulse 2s infinite">⏳</span><strong id="wait-name"></strong>, заявка отправлена!<br><span style="font-size:12px;color:var(--muted)">Код придёт в <b id="wait-via" style="color:var(--accent)"></b>. Страница обновится сама.</span></div>
+      <button class="btn btn-ghost" id="btn-back-wait">← Назад</button>
+    </div>
+
+    <div class="login-step hidden" id="step-code">
+      <div class="inf" id="code-hint">Введи код</div>
+      <div class="otp-row">
+        <input class="otp-d" maxlength="1" inputmode="numeric" data-i="0">
+        <input class="otp-d" maxlength="1" inputmode="numeric" data-i="1">
+        <input class="otp-d" maxlength="1" inputmode="numeric" data-i="2">
+        <input class="otp-d" maxlength="1" inputmode="numeric" data-i="3">
+        <input class="otp-d" maxlength="1" inputmode="numeric" data-i="4">
+        <input class="otp-d" maxlength="1" inputmode="numeric" data-i="5">
+      </div>
+      <div id="err-code" class="err" style="display:none"></div>
+      <button class="btn btn-primary" id="btn-verify">Подтвердить →</button>
+      <button class="btn btn-ghost" id="btn-back-code">← Назад</button>
+    </div>
+
+    <div class="login-step hidden" id="step-show-key">
+      <div class="ok">✅ Добро пожаловать!</div>
+      <div class="keybox">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Твой ключ для других устройств:</div>
+        <div class="keyval" id="new-key-val"></div>
+        <div class="keyhint">Сохрани его — понадобится для входа на других устройствах</div>
+      </div>
+      <button class="btn btn-primary" id="btn-after-key">Войти →</button>
+    </div>
+
+    <div class="login-step hidden" id="step-key-login">
+      <div style="text-align:center;font-size:13px;color:var(--muted)">Введи ключ с регистрации</div>
+      <input id="inp-key" class="field" placeholder="Иван4823" autocomplete="off" style="font-family:monospace;font-size:17px;letter-spacing:1px">
+      <div id="err-key" class="err" style="display:none"></div>
+      <button class="btn btn-gold" id="btn-login-key">🔑 Войти</button>
+      <button class="btn btn-ghost" id="btn-back-key">← Назад</button>
+    </div>
+
+    <div class="login-step hidden" id="step-admin">
+      <p style="color:var(--muted);font-size:12px;text-align:center">Вход для классного руководителя</p>
+      <input id="inp-admin-name" class="field" placeholder="Ваше имя" autocomplete="off">
+      <input id="inp-admin-pass" class="field" type="password" placeholder="Пароль">
+      <div id="err-admin" class="err" style="display:none"></div>
+      <button class="btn btn-primary" id="btn-admin-login">Войти →</button>
+      <button class="btn btn-ghost" id="btn-back-admin">← Назад</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="header">
+    <span class="brand">8В</span>
+    <div class="tabs-row">
+      <button class="tab active" data-tab="chat">💬 Чат</button>
+      <button class="tab" data-tab="schedule">📅 Расписание</button>
+      <button class="tab" data-tab="students">👥 Ученики</button>
+      <button class="tab" data-tab="requests" id="tab-req" style="display:none">📋 Заявки<span class="badge" id="badge-req" style="display:none">0</span></button>
+      <button class="tab" data-tab="guide">❓ Гайд</button>
+    </div>
+    <div class="user-chip">
+      <span id="h-ava" style="font-size:20px"></span>
+      <div class="nblock">
+        <div style="font-size:13px;font-weight:700;color:#fff" id="h-name"></div>
+        <div style="font-size:11px;color:var(--teacher);font-weight:600;display:none" id="h-role"></div>
+      </div>
+      <button class="btn-sm" id="btn-logout">Выйти</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <!-- CHAT -->
+    <div id="chat-panel">
+      <div id="chat-topbar">
+        <div id="topbar-info">
+          <div id="topbar-title">💬 Чат 8В</div>
+          <div id="topbar-sub"></div>
+        </div>
+        <button class="btn-danger" id="btn-clear-top" style="display:none">🗑️</button>
+      </div>
+      <div id="clear-bar">
+        <button class="btn-danger" id="btn-clear-chat">🗑️ Очистить чат</button>
+      </div>
+      <div id="messages">
+        <div class="empty"><div class="icon">💬</div><h3>Пока нет сообщений</h3><p>Напиши первым!</p></div>
+      </div>
+      <div id="photo-prev">
+        <img id="pp-img" src="" alt="">
+        <span style="font-size:13px;color:var(--muted);flex:1">Фото готово</span>
+        <button id="pp-clear">✕</button>
+      </div>
+      <div id="chat-bar">
+        <button id="photo-btn">📎</button>
+        <input type="file" id="photo-input" accept="image/*">
+        <textarea id="msg-input" placeholder="Сообщение..." rows="1"></textarea>
+        <button id="send-btn">➤</button>
+      </div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div id="sched-panel" class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="ptitle">📅 Расписание</div>
+        <div id="upload-ctrl" style="display:none">
+          <button class="btn btn-primary" style="width:auto;padding:9px 17px;font-size:13px" id="upload-btn">⬆️ Загрузить Excel</button>
+          <input type="file" id="xlsx-input" accept=".xlsx,.xls" style="display:none">
+        </div>
+      </div>
+      <div id="sched-error" class="err" style="display:none;margin-bottom:12px"></div>
+      <div id="sched-body"></div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="students-panel" class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div class="ptitle">👥 Ученики</div>
+        <div id="students-count" style="color:var(--muted);font-size:13px"></div>
+      </div>
+      <div id="students-body"></div>
+    </div>
+
+    <!-- REQUESTS -->
+    <div id="requests-panel" class="panel">
+      <div class="ptitle">📋 Заявки</div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Одобри → отправь ученику код и ключ в мессенджер</p>
+      <div id="requests-list"></div>
+    </div>
+
+    <!-- GUIDE -->
+    <div id="guide-panel" class="panel">
+      <div class="ptitle">❓ Как пользоваться</div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:18px">Полный гайд по сайту класса 8В</p>
+      <div class="gsec"><h3>👤 Первый вход</h3>
+        <div class="gstep"><div class="gnum">1</div><div class="gtxt">Введи <b>Имя Фамилия</b> и свой <b>номер телефона</b></div></div>
+        <div class="gstep"><div class="gnum">2</div><div class="gtxt">Выбери мессенджер: <b>WhatsApp, Telegram или MAX</b></div></div>
+        <div class="gstep"><div class="gnum">3</div><div class="gtxt">Нажми <b>«Отправить заявку»</b> — страница сама ждёт</div></div>
+        <div class="gstep"><div class="gnum">4</div><div class="gtxt">Классный руководитель одобрит и <b>пришлёт код</b></div></div>
+        <div class="gstep"><div class="gnum">5</div><div class="gtxt">Введи код — войдёшь! Сохрани <b>личный ключ</b></div></div>
+        <div class="gwarn">⚠️ Ключ вида <code>Иван4823</code> нужен для входа с других устройств</div>
+      </div>
+      <div class="gsec"><h3>🔑 Вход по ключу</h3>
+        <div class="gstep"><div class="gnum">1</div><div class="gtxt">Нажми <b>«Войти по ключу»</b> и введи свой ключ</div></div>
+        <div class="gtip">💡 На том же устройстве браузер запоминает тебя автоматически</div>
+      </div>
+      <div class="gsec"><h3>💬 Чат</h3>
+        <div class="gstep"><div class="gnum">1</div><div class="gtxt">Пиши сообщения, отправляй кнопкой ➤ или <b>Enter</b></div></div>
+        <div class="gstep"><div class="gnum">2</div><div class="gtxt">Нажми 📎 чтобы <b>отправить фото</b></div></div>
+        <div class="gstep"><div class="gnum">3</div><div class="gtxt">Наведи на сообщение → 🗑 для удаления (на мобильном — тапни)</div></div>
+        <div class="gstep"><div class="gnum">4</div><div class="gtxt">Сообщения классного руководителя <b style="color:var(--teacher)">фиолетовые</b> с 👑</div></div>
+      </div>
+      <div class="gsec"><h3>📲 Установить как приложение</h3>
+        <div class="pcard"><h4>🍎 iPhone / iPad (Safari)</h4><div class="psteps">1. Открой в <b>Safari</b><br>2. Нажми <b>«Поделиться»</b> (квадрат со стрелкой)<br>3. <b>«На экран Домой»</b> → <b>«Добавить»</b></div></div>
+        <div class="pcard"><h4>🤖 Android (Chrome)</h4><div class="psteps">1. Открой в <b>Chrome</b><br>2. Меню <b>⋮</b> → <b>«Добавить на главный экран»</b></div></div>
+        <div class="pcard"><h4>💻 Windows / Mac</h4><div class="psteps">1. Открой в <b>Chrome или Edge</b><br>2. Иконка установки в адресной строке → подтверди</div></div>
+        <div class="gtip">💡 После установки открывается без панелей браузера</div>
+      </div>
+      <div class="gsec"><h3>👑 Для классного руководителя</h3>
+        <div class="gstep"><div class="gnum">1</div><div class="gtxt">Войди через <b>«Администратор»</b></div></div>
+        <div class="gstep"><div class="gnum">2</div><div class="gtxt">В <b>📋 Заявках</b> — одобряй, отправляй код и ключ</div></div>
+        <div class="gstep"><div class="gnum">3</div><div class="gtxt">В <b>📅 Расписании</b> — загружай Excel</div></div>
+        <div class="gstep"><div class="gnum">4</div><div class="gtxt">В чате — удаляй любые сообщения и очищай всё</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <div id="bottom-nav">
+    <div class="bnav">
+      <button class="bnav-btn active" data-tab="chat"><span class="bico">💬</span>Чат</button>
+      <button class="bnav-btn" data-tab="schedule"><span class="bico">📅</span>Расписание</button>
+      <button class="bnav-btn" data-tab="students"><span class="bico">👥</span>Ученики</button>
+      <button class="bnav-btn" data-tab="requests" id="bnav-req" style="display:none"><span class="bico">📋</span>Заявки<span class="bnav-badge" id="bnav-badge" style="display:none">0</span></button>
+      <button class="bnav-btn" data-tab="guide"><span class="bico">❓</span>Гайд</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal" style="display:none">
+  <div class="modal">
+    <div style="font-size:44px">🗑️</div>
+    <h3 id="modal-title">Удалить?</h3>
+    <p>Это нельзя отменить</p>
+    <div class="mbtns">
+      <button class="cancel" id="modal-cancel">Отмена</button>
+      <button class="confirm" id="modal-confirm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="this.style.display='none'">
+  <img id="lb-img" src="" alt="">
+</div>
+
+</div>
+
+<script>
+// ═══ FIREBASE ═══
+firebase.initializeApp({
+  apiKey:"AIzaSyBzPbPhYS7dDfhDwaqYLAHpIV6QBN53EV0",
+  authDomain:"project-7979939474542798395.firebaseapp.com",
+  databaseURL:"https://project-7979939474542798395-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"project-7979939474542798395",
+  storageBucket:"project-7979939474542798395.firebasestorage.app",
+  messagingSenderId:"64773662070",
+  appId:"1:64773662070:web:59a5ade363119a1b61c657"
+});
+var db=firebase.database();
+
+// ═══ DEVICE ═══
+var isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<680;
+if(isMobile)document.body.classList.add('compact');
+
+// ═══ CONSTANTS ═══
+var ADMIN_PASS="классрук8в",LS_KEY="8v_sess_v3";
+var SID=Math.random().toString(36).slice(2,10);
+var DAYS=["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
+var AVA=["🐻","🦊","🐼","🐨","🦁","🐯","🐸","🐧","🦋","🌻","⚡","🌈","🎸","🚀","🎨","🏆"];
+var CLR=["#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7","#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE","#85C1E9","#F1948A","#82E0AA"];
+
+// ═══ STATE ═══
+var user=null,messages=[],schedule=null,schedDay=0,pendConfirm=null,unsubs=[];
+var selMsg="WhatsApp",pendKey=null,pendPhone=null,pollTmr=null,pendPhoto=null;
+
+// ═══ HELPERS ═══
+function hash(s){s=String(s||"?");var h=0;for(var i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);return Math.abs(h);}
+function av(n){return AVA[hash(n)%AVA.length];}
+function cl(n){return CLR[hash(n)%CLR.length];}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function now2(){var d=new Date();return{time:d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}),date:d.toLocaleDateString("ru-RU")};}
+function pk(p){return p.replace(/\D/g,"");}
+function genCode(){return String(Math.floor(100000+Math.random()*900000));}
+function genKey(name){return(name||"user").trim().split(/\s+/)[0]+String(Math.floor(1000+Math.random()*9000));}
+function ua(){var u=navigator.userAgent;if(/iPhone|iPad/i.test(u))return"📱 iPhone/iPad";if(/Android/i.test(u))return"📱 Android";if(/Windows/i.test(u))return"💻 Windows";if(/Mac/i.test(u))return"💻 Mac";return"🌐 Браузер";}
+function ago(ts){var s=Math.floor((Date.now()-ts)/1000);if(s<60)return"только что";if(s<3600)return Math.floor(s/60)+" мин";if(s<86400)return Math.floor(s/3600)+" ч";return Math.floor(s/86400)+" д";}
+function saveSess(v){try{localStorage.setItem(LS_KEY,JSON.stringify(v));}catch(e){}}
+function loadSess(){try{var s=localStorage.getItem(LS_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+function clrSess(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
+function fbP(p,v){return db.ref(p).push(v);}
+function fbS(p,v){return db.ref(p).set(v);}
+function fbU(p,v){return db.ref(p).update(v);}
+function fbD(p){return db.ref(p).remove();}
+function fbO(p,cb){db.ref(p).once("value",function(s){cb(s.val());});}
+function fbL(p,cb){var r=db.ref(p);r.on("value",function(s){cb(s.val());});unsubs.push(function(){r.off();});}
+function showStep(id){document.querySelectorAll(".login-step").forEach(function(e){e.classList.add("hidden");});document.getElementById(id).classList.remove("hidden");}
+function shk(id){var el=document.getElementById(id);el.classList.remove("shake");void el.offsetWidth;el.classList.add("shake");setTimeout(function(){el.classList.remove("shake");},500);}
+function showErr(id,msg){var el=document.getElementById(id);el.textContent=msg;el.style.display="";setTimeout(function(){el.style.display="none";},4000);}
+
+// ═══ MESSENGER ═══
+window.pickMsg=function(b){document.querySelectorAll(".mopt").forEach(function(x){x.classList.remove("sel");});b.classList.add("sel");selMsg=b.dataset.m;};
+
+// ═══ REQUEST ═══
+document.getElementById("btn-request").onclick=function(){
+  var name=document.getElementById("inp-name").value.trim();
+  var cc=document.getElementById("inp-cc").value;
+  var num=document.getElementById("inp-phone").value.replace(/\D/g,"");
+  if(!name){showErr("err-phone","Введи имя!");shk("inp-name");return;}
+  if(num.length<9){showErr("err-phone","Введи номер");shk("inp-phone");return;}
+  var phone=cc+num,key=pk(phone);
+  fbO("approved/"+key,function(val){
+    if(val&&val.loginKey){pendKey=key;pendPhone=phone;document.getElementById("code-hint").innerHTML="Введи код из <b>"+esc(val.via||"мессенджер")+"</b>";showStep("step-code");setTimeout(function(){document.querySelector(".otp-d").focus();},200);}
+    else{fbS("requests/"+key,{name:name,phone:phone,messenger:selMsg,code:genCode(),status:"pending",ts:Date.now()});pendKey=key;pendPhone=phone;document.getElementById("wait-name").textContent=name;document.getElementById("wait-via").textContent=selMsg;showStep("step-wait");startPoll(key);}
+  });
+};
+document.getElementById("inp-phone").onkeydown=function(e){if(e.key==="Enter")document.getElementById("btn-request").click();};
+
+function startPoll(key){stopPoll();pollTmr=setInterval(function(){fbO("approved/"+key,function(val){if(val&&val.loginKey){stopPoll();pendKey=key;document.getElementById("code-hint").innerHTML="Введи код из <b>"+esc(val.via||"мессенджер")+"</b>";showStep("step-code");setTimeout(function(){document.querySelector(".otp-d").focus();},200);}});},3000);}
+function stopPoll(){if(pollTmr){clearInterval(pollTmr);pollTmr=null;}}
+document.getElementById("btn-back-wait").onclick=function(){stopPoll();showStep("step-phone");};
+document.getElementById("btn-back-code").onclick=function(){showStep("step-phone");};
+
+// ═══ OTP ═══
+document.querySelectorAll(".otp-d").forEach(function(el,i,all){
+  el.addEventListener("input",function(){this.value=this.value.replace(/\D/g,"").slice(-1);if(this.value&&i<all.length-1)all[i+1].focus();if(getOTP().length===6)document.getElementById("btn-verify").click();});
+  el.addEventListener("keydown",function(e){if(e.key==="Backspace"&&!this.value&&i>0)all[i-1].focus();});
+  el.addEventListener("paste",function(e){var p=(e.clipboardData||window.clipboardData).getData("text").replace(/\D/g,"");if(p.length>=6){p.slice(0,6).split("").forEach(function(d,j){if(all[j])all[j].value=d;});all[5].focus();setTimeout(function(){document.getElementById("btn-verify").click();},80);e.preventDefault();}});
+});
+function getOTP(){return Array.from(document.querySelectorAll(".otp-d")).map(function(e){return e.value;}).join("");}
+function clrOTP(){document.querySelectorAll(".otp-d").forEach(function(e){e.value="";}); }
+
+document.getElementById("btn-verify").onclick=function(){
+  var ent=getOTP();
+  if(ent.length!==6){showErr("err-code","Введи все 6 цифр");return;}
+  fbO("approved/"+pendKey,function(val){
+    if(!val){showErr("err-code","Сначала получи одобрение");return;}
+    if(String(val.code)!==ent){showErr("err-code","Неверный код!");document.querySelectorAll(".otp-d").forEach(function(e){e.classList.add("shake");});setTimeout(function(){document.querySelectorAll(".otp-d").forEach(function(e){e.classList.remove("shake");});clrOTP();document.querySelector(".otp-d").focus();},500);return;}
+    if(!val.loginKey){var lk=genKey(val.name);fbU("approved/"+pendKey,{loginKey:lk});document.getElementById("new-key-val").textContent=lk;window._pu={name:val.name,phone:pendPhone,loginKey:lk,userKey:pendKey};showStep("step-show-key");}
+    else{regSes(val.name,pendPhone,val.loginKey,pendKey);}
+  });
+};
+document.getElementById("btn-after-key").onclick=function(){if(window._pu){var u=window._pu;regSes(u.name,u.phone,u.loginKey,u.userKey);window._pu=null;}};
+
+// ═══ KEY LOGIN ═══
+document.getElementById("btn-show-key").onclick=function(){showStep("step-key-login");};
+document.getElementById("btn-back-key").onclick=function(){showStep("step-phone");};
+document.getElementById("inp-key").onkeydown=function(e){if(e.key==="Enter")document.getElementById("btn-login-key").click();};
+document.getElementById("btn-login-key").onclick=function(){
+  var k=document.getElementById("inp-key").value.trim();
+  if(!k){showErr("err-key","Введи ключ!");shk("inp-key");return;}
+  fbO("approved",function(all){
+    if(!all){showErr("err-key","Ключ не найден");return;}
+    var found=null,foundPk=null;
+    Object.entries(all).forEach(function(e){if(e[1].loginKey===k){found=e[1];foundPk=e[0];}});
+    if(!found){showErr("err-key","Ключ не найден");shk("inp-key");return;}
+    regSes(found.name,found.phone,found.loginKey,foundPk);
+  });
+};
+
+// ═══ ADMIN ═══
+document.getElementById("btn-show-admin").onclick=function(){showStep("step-admin");};
+document.getElementById("btn-back-admin").onclick=function(){showStep("step-phone");};
+document.getElementById("btn-admin-login").onclick=function(){
+  var name=document.getElementById("inp-admin-name").value.trim();
+  var pass=document.getElementById("inp-admin-pass").value;
+  if(!name){showErr("err-admin","Введи имя!");return;}
+  if(pass!==ADMIN_PASS){showErr("err-admin","Неверный пароль!");shk("inp-admin-pass");return;}
+  enterApp({name:name,isTeacher:true});
+};
+document.getElementById("inp-admin-pass").onkeydown=function(e){if(e.key==="Enter")document.getElementById("btn-admin-login").click();};
+
+// ═══ REG SESSION ═══
+function regSes(name,phone,loginKey,userKey){
+  fbS("approved/"+userKey+"/sessions/"+SID,{sid:SID,device:ua(),lastSeen:Date.now(),loginAt:Date.now()});
+  window._si=setInterval(function(){fbU("approved/"+userKey+"/sessions/"+SID,{lastSeen:Date.now()});},60000);
+  enterApp({name:name,phone:phone,loginKey:loginKey,userKey:userKey,isTeacher:false});
+}
+
+// ═══ ENTER APP ═══
+function enterApp(u){
+  user=u;saveSess(u);stopPoll();
+  document.getElementById("h-ava").textContent=av(u.name);
+  document.getElementById("h-name").textContent=u.name;
+  if(u.isTeacher){
+    document.getElementById("h-role").textContent="👑 Администратор";
+    document.getElementById("h-role").style.display="";
+    document.getElementById("clear-bar").style.display="flex";
+    document.getElementById("btn-clear-top").style.display="";
+    document.getElementById("upload-ctrl").style.display="";
+    document.getElementById("tab-req").style.display="";
+    document.getElementById("bnav-req").style.display="";
+  }
+  if(isMobile){
+    document.getElementById("chat-topbar").style.display="flex";
+    document.getElementById("topbar-sub").textContent=u.name;
+  }
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("spinner").style.display="none";
+  document.getElementById("app").style.display="flex";
+  startListeners();
+  setTimeout(function(){document.getElementById("msg-input").focus();},120);
+}
+
+// ═══ LISTENERS ═══
+function startListeners(){
+  fbL("messages",function(val){
+    messages=val?Object.entries(val).filter(function(e){return e[1]&&e[1].author&&(e[1].text||e[1].photo);}).map(function(e){return Object.assign({},e[1],{id:e[0]});}).sort(function(a,b){return(a.ts||0)-(b.ts||0);}):[];
+    renderMessages();
+  });
+  fbL("schedule",function(val){schedule=val||null;renderSchedule();});
+  fbL("approved",function(val){renderStudents(val||{});});
+  if(user&&user.isTeacher){
+    fbL("requests",function(val){
+      val=val||{};
+      var pend=Object.values(val).filter(function(r){return r.status==="pending";}).length;
+      var b=document.getElementById("badge-req"),bb=document.getElementById("bnav-badge");
+      pend>0?(b.textContent=pend,b.style.display="",bb.textContent=pend,bb.style.display=""):(b.style.display="none",bb.style.display="none");
+      renderRequests(val);
+    });
+  }
+}
+
+// ═══ AUTO LOGIN ═══
+// Fallback: show login after 6s no matter what
+var _autoTimeout=setTimeout(function(){if(document.getElementById("spinner").style.display!=="none"){document.getElementById("spinner").style.display="none";document.getElementById("login-screen").style.display="flex";}},6000);
+function runAutoLogin(){
+clearTimeout(_autoTimeout);
+  var s=loadSess();
+  if(s&&s.name){
+    if(s.isTeacher){enterApp(s);}
+    else if(s.userKey){fbO("approved/"+s.userKey,function(val){if(val&&val.loginKey){regSes(val.name,val.phone,val.loginKey,s.userKey);}else{clrSess();document.getElementById("spinner").style.display="none";document.getElementById("login-screen").style.display="flex";}});}
+    else{clrSess();document.getElementById("spinner").style.display="none";document.getElementById("login-screen").style.display="flex";}
+  } else {document.getElementById("spinner").style.display="none";document.getElementById("login-screen").style.display="flex";}
+}
+document.addEventListener("DOMContentLoaded", runAutoLogin);
+
+// ═══ LOGOUT ═══
+document.getElementById("btn-logout").onclick=function(){
+  if(user&&user.userKey)fbD("approved/"+user.userKey+"/sessions/"+SID);
+  if(window._si){clearInterval(window._si);window._si=null;}
+  unsubs.forEach(function(f){f();});unsubs=[];
+  stopPoll();clrSess();
+  user=null;messages=[];schedule=null;schedDay=0;pendPhoto=null;
+  ["h-role","clear-bar","upload-ctrl","tab-req","bnav-req","btn-clear-top"].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display="none";});
+  document.getElementById("app").style.display="none";
+  document.getElementById("login-screen").style.display="flex";
+  ["inp-phone","inp-name","inp-admin-name","inp-admin-pass","inp-key"].forEach(function(id){document.getElementById(id).value="";});
+  clrOTP();switchTab("chat");
+};
+
+// ═══ TABS ═══
+function switchTab(name){
+  document.querySelectorAll(".tab,.bnav-btn").forEach(function(t){t.classList.toggle("active",t.dataset.tab===name);});
+  document.getElementById("chat-panel").style.display=name==="chat"?"flex":"none";
+  ["sched","students","requests","guide"].forEach(function(p){
+    var tabName=p==="sched"?"schedule":p;
+    var el=document.getElementById(p+"-panel");
+    el.style.display=name===tabName?"block":"none";
+    if(name===tabName)el.classList.add("active"); else el.classList.remove("active");
+  });
+  if(name==="schedule")renderSchedule();
+}
+document.querySelectorAll(".tab,.bnav-btn").forEach(function(t){t.onclick=function(){switchTab(t.dataset.tab);};});
+
+// ═══ PHOTO ═══
+document.getElementById("photo-btn").onclick=function(){document.getElementById("photo-input").click();};
+document.getElementById("photo-input").onchange=function(e){
+  var file=e.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement("canvas"),MAX=900,w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      pendPhoto=canvas.toDataURL("image/jpeg",0.75);
+      document.getElementById("pp-img").src=pendPhoto;
+      document.getElementById("photo-prev").style.display="flex";
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);e.target.value="";
+};
+document.getElementById("pp-clear").onclick=function(){pendPhoto=null;document.getElementById("photo-prev").style.display="none";document.getElementById("pp-img").src="";};
+
+// ═══ SEND ═══
+document.getElementById("send-btn").onclick=sendMsg;
+document.getElementById("msg-input").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}});
+document.getElementById("msg-input").addEventListener("input",function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,100)+"px";});
+function sendMsg(){
+  var inp=document.getElementById("msg-input"),t=inp.value.trim();
+  if(!t&&!pendPhoto||!user)return;
+  var n=now2(),msg={author:user.name,isTeacher:!!user.isTeacher,time:n.time,date:n.date,ts:Date.now()};
+  if(t)msg.text=t;
+  if(pendPhoto){msg.photo=pendPhoto;pendPhoto=null;document.getElementById("photo-prev").style.display="none";document.getElementById("pp-img").src="";}
+  fbP("messages",msg);
+  inp.value="";inp.style.height="";
+}
+
+// ═══ RENDER MESSAGES ═══
+function renderMessages(){
+  var box=document.getElementById("messages");
+  if(!messages.length){box.innerHTML='<div class="empty"><div class="icon">💬</div><h3>Пока нет сообщений</h3><p>Напиши первым!</p></div>';return;}
+  var html="",lastDate=null,lastAuthor=null;
+  messages.forEach(function(m){
+    if(m.date!==lastDate){html+='<div class="date-sep"><span>'+esc(m.date)+'</span></div>';lastDate=m.date;lastAuthor=null;}
+    var own=user&&m.author===user.name;
+    var canDel=user&&(user.isTeacher||own);
+    var showAva=!own&&lastAuthor!==m.author;
+    var showName=showAva;
+    var bCls="bubble "+(own?"own":m.isTeacher?"other tea":"other");
+    var ac=m.isTeacher?"var(--teacher)":cl(m.author);
+    html+='<div class="msg-row'+(own?" own":"")+'">';
+    if(!own){
+      if(showAva)html+='<div class="ava-slot"><div class="ava-c" style="background:'+ac+'22">'+av(m.author)+'</div></div>';
+      else html+='<div class="ava-slot"></div>';
+    }
+    html+='<div class="msg-col'+(own?" own":"")+'">';
+    if(showName)html+='<div class="sname" style="color:'+ac+'">'+esc(m.author)+(m.isTeacher?" 👑":"")+'</div>';
+    html+='<div class="'+bCls+'">';
+    if(m.photo)html+='<img class="msg-photo" src="'+esc(m.photo)+'" onclick="openLb(this.src)" loading="lazy">';
+    if(m.text)html+=esc(m.text).replace(/\n/g,"<br>");
+    html+='<div class="bfoot"><span class="btime">'+esc(m.time)+'</span>'+(canDel?'<button class="del-btn" onclick="confirmDel(\''+m.id+'\')">🗑</button>':'')+'</div>';
+    html+='</div></div></div>';
+    lastAuthor=m.author;
+  });
+  box.innerHTML=html;
+  box.scrollTop=box.scrollHeight;
+}
+
+window.openLb=function(src){document.getElementById("lb-img").src=src;document.getElementById("lightbox").style.display="flex";};
+
+// ═══ REQUESTS ═══
+function renderRequests(data){
+  var list=document.getElementById("requests-list");
+  var entries=Object.entries(data||{});
+  if(!entries.length){list.innerHTML='<div class="empty"><div class="icon">📭</div><h3>Заявок нет</h3></div>';return;}
+  entries.sort(function(a,b){return(b[1].ts||0)-(a[1].ts||0);});
+  var html="";
+  entries.forEach(function(e){
+    var key=e[0],r=e[1];
+    var st=r.status==="approved"?"✅ Одобрено":r.status==="rejected"?"❌ Отклонено":"⏳ Ожидает";
+    var d=r.ts?new Date(r.ts).toLocaleString("ru-RU"):"";
+    html+='<div class="req-card'+(r.status==="approved"?" approved":r.status==="rejected"?" rejected":"")+'"><div class="req-top"><div><div class="req-name">'+av(r.name)+" "+esc(r.name)+'</div><div class="req-phone">'+esc(r.phone)+'</div><div class="req-meta">'+esc(r.messenger||"—")+' · '+esc(d)+' · '+st+'</div></div>';
+    if(r.status==="pending")html+='<div class="req-actions"><button class="btn-approve" onclick="approveReq(\''+key+'\',\''+esc(r.name)+'\',\''+esc(r.phone)+'\',\''+esc(r.messenger)+'\',\''+esc(r.code)+'\')">✅ Принять</button><button class="btn-reject" onclick="rejectReq(\''+key+'\')">✕ Отказать</button></div>';
+    html+='</div>';
+    if(r.status==="approved"&&r.code){html+='<div class="code-reveal"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Отправь в <b style="color:#fff">'+esc(r.messenger||"—")+'</b>:</div><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><div><div style="font-size:10px;color:var(--muted)">Код:</div><div class="code-num">'+esc(r.code)+'</div></div>'+(r.loginKey?'<div><div style="font-size:10px;color:var(--muted)">Ключ:</div><div style="font-family:monospace;font-size:16px;font-weight:900;color:var(--gold)">'+esc(r.loginKey)+'</div></div>':"")+'</div></div>';}
+    html+='</div>';
+  });
+  list.innerHTML=html;
+}
+window.approveReq=function(key,name,phone,messenger,code){var lk=genKey(name);fbU("requests/"+key,{status:"approved",loginKey:lk});fbS("approved/"+key,{name:name,phone:phone,via:messenger,code:code,loginKey:lk,ts:Date.now()});};
+window.rejectReq=function(key){fbU("requests/"+key,{status:"rejected"});};
+
+// ═══ STUDENTS ═══
+function renderStudents(data){
+  var body=document.getElementById("students-body");
+  var entries=Object.entries(data);
+  document.getElementById("students-count").textContent=entries.length+" чел.";
+  if(!entries.length){body.innerHTML='<div class="empty"><div class="icon">👥</div><h3>Пока нет учеников</h3></div>';return;}
+  entries.sort(function(a,b){return(a[1].name||"").localeCompare(b[1].name||"","ru");});
+  var n=Date.now(),html='<div class="students-grid">';
+  entries.forEach(function(e){
+    var s=e[1],ses=s.sessions?Object.values(s.sessions):[];
+    var act=ses.filter(function(x){return n-(x.lastSeen||0)<5*60*1000;});
+    html+='<div class="student-card"><div class="sc-top"><div class="sc-ava">'+av(s.name)+'</div><div><div class="sc-name" style="color:'+cl(s.name)+'">'+esc(s.name)+'</div><div class="sc-phone">'+esc(s.phone||"")+'</div></div></div>'+(s.loginKey?'<div class="sc-key">🔑 '+esc(s.loginKey)+'</div>':'')+'<div style="margin-top:6px;font-size:11px;color:var(--muted)">Сессии: <b style="color:'+(act.length?'var(--green)':'var(--muted)')+'">'+act.length+' акт.</b> / '+ses.length+'</div><div class="ses-list">';
+    ses.slice(-3).reverse().forEach(function(x){var on=n-(x.lastSeen||0)<5*60*1000;html+='<div class="ses-row"><div class="ses-dot '+(on?"on":"off")+'"></div><span>'+esc(x.device||"Устройство")+'</span><span style="margin-left:auto">'+esc(ago(x.lastSeen||0))+'</span></div>';});
+    html+='</div></div>';
+  });
+  html+='</div>';body.innerHTML=html;
+}
+
+// ═══ SCHEDULE ═══
+function renderSchedule(){
+  var body=document.getElementById("sched-body");
+  if(!schedule){body.innerHTML='<div class="empty"><div class="icon">📋</div><h3>Расписание не загружено</h3><p>'+(user&&user.isTeacher?"Нажми «Загрузить Excel»":"Попроси классного руководителя")+'</p></div>';return;}
+  var pills=DAYS.map(function(d,i){return'<button class="day-pill'+(schedDay===i?" active":"")+'\" onclick="setDay('+i+')">'+d+'</button>';}).join("");
+  pills+='<button class="day-pill'+(schedDay===-1?" active":"")+'\" onclick="setDay(-1)">📊 Вся неделя</button>';
+  if(schedDay===-1){var rows=schedule.map(function(row,ri){return'<tr>'+row.map(function(c){return ri===0?'<th>'+esc(c)+'</th>':'<td>'+esc(c)+'</td>';}).join("")+'</tr>';}).join("");body.innerHTML='<div class="day-pills">'+pills+'</div><div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)"><table class="sched-tbl"><tbody>'+rows+'</tbody></table></div>';}
+  else{var lessons=schedule.slice(1).map(function(row,ri){var s=row[schedDay+1]||row[1]||"";if(!String(s).trim())return"";return'<div class="lesson-card"><div class="lesson-num">'+(ri+1)+'</div><div style="font-weight:600;font-size:14px">'+esc(s)+'</div></div>';}).join("");body.innerHTML='<div class="day-pills">'+pills+'</div><div style="background:rgba(255,255,255,.03);border-radius:16px;padding:16px;border:1px solid var(--border)"><h3 style="color:var(--accent);margin-bottom:12px;font-size:16px">'+DAYS[schedDay]+'</h3>'+(lessons||'<p style="color:var(--muted)">Нет данных</p>')+'</div>';}
+}
+window.setDay=function(d){schedDay=d;renderSchedule();};
+document.getElementById("upload-btn").onclick=function(){document.getElementById("xlsx-input").click();};
+document.getElementById("xlsx-input").onchange=function(e){var file=e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){try{var wb=XLSX.read(ev.target.result,{type:"binary"});fbS("schedule",XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""}));document.getElementById("sched-error").style.display="none";}catch(e){document.getElementById("sched-error").textContent="Ошибка файла";document.getElementById("sched-error").style.display="";}};reader.readAsBinaryString(file);e.target.value="";};
+
+// ═══ MODAL ═══
+function setClearHandlers(){
+  ["btn-clear-chat","btn-clear-top"].forEach(function(id){var el=document.getElementById(id);if(el)el.onclick=function(){pendConfirm="__all__";document.getElementById("modal-title").textContent="Очистить весь чат?";document.getElementById("modal").style.display="flex";};});
+}
+setClearHandlers();
+document.getElementById("modal-cancel").onclick=function(){document.getElementById("modal").style.display="none";pendConfirm=null;};
+document.getElementById("modal-confirm").onclick=function(){document.getElementById("modal").style.display="none";if(!pendConfirm)return;pendConfirm==="__all__"?fbS("messages",null):fbD("messages/"+pendConfirm);pendConfirm=null;};
+window.confirmDel=function(id){pendConfirm=id;document.getElementById("modal-title").textContent="Удалить сообщение?";document.getElementById("modal").style.display="flex";};
+
+// ═══ PWA ═══
+(function(){var m={name:"Класс 8В",short_name:"8В",start_url:location.href,display:"standalone",background_color:"#0d0d1a",theme_color:"#0d0d1a",orientation:"portrait-primary",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230d0d1a'/><text y='.85em' font-size='360' x='50%' text-anchor='middle'>🏫</text></svg>",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};var blob=new Blob([JSON.stringify(m)],{type:"application/json"});document.getElementById("pwa-manifest").href=URL.createObjectURL(blob);})();
+</script>
+</body>
+</html>
